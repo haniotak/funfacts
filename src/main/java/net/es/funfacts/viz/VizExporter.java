@@ -22,19 +22,48 @@ public class VizExporter {
         List<IsisRelation> isisRelations = input.getIsis();
         VizGraph g = VizGraph.builder().edges(new ArrayList<>()).nodes(new ArrayList<>()).build();
 
-        List<String> seenNodes = new ArrayList<>();
+        List<String> routers = new ArrayList<>();
+        Set<String> seenAddrs = new HashSet<>();
+        List<IsisRelation> seenBothSides = new ArrayList<>();
+
         for (IsisRelation isis : isisRelations) {
-            if (!seenNodes.contains(isis.getA())) {
-                seenNodes.add(isis.getA());
+            String a_addr = isis.getA_addr();
+            String z_addr = isis.getZ_addr();
+
+            if (seenAddrs.contains(a_addr) || seenAddrs.contains(z_addr)) {
+                // we have seen either A or Z address before.
+                seenBothSides.add(isis);
             }
-            if (!seenNodes.contains(isis.getZ())) {
-                seenNodes.add(isis.getZ());
+            seenAddrs.add(a_addr);
+            seenAddrs.add(z_addr);
+        }
+
+        for (IsisRelation isis : seenBothSides ) {
+            String a = isis.getA();
+            String z = isis.getZ();
+            if (!routers.contains(a)) {
+                routers.add(a);
             }
+            if (!routers.contains(z)) {
+                routers.add(z);
+            }
+            VizEdge ve = VizEdge.builder()
+                    .from(a).to(z).title("").label("").value(1)
+                    .arrows(null).arrowStrikethrough(false).color(null)
+                    .build();
+            g.getEdges().add(ve);
+        }
+
+        for (String router : routers) {
+            this.makeNode(router, g);
         }
 
         return g;
 
     }
+
+
+
 
     public VizGraph circuitGraph() {
 
@@ -45,18 +74,9 @@ public class VizExporter {
     }
 
 
-    private void makeNode(String node, List<String> seenNodes, Map<String, Double> nodeIngresses, VizGraph g) {
-        if (seenNodes.contains(node)) {
-            return;
-        }
-        seenNodes.add(node);
-        Double ingress = 0.0;
-        if (nodeIngresses.keySet().contains(node)) {
-            ingress = nodeIngresses.get(node);
-        }
-        String title = shorten(ingress);
+    private void makeNode(String node, VizGraph g) {
 
-        VizNode n = VizNode.builder().id(node).label(node).title(title).value(ingress.intValue()).build();
+        VizNode n = VizNode.builder().id(node).label(node).title(node).value(1).build();
         g.getNodes().add(n);
     }
 

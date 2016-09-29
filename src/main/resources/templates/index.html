@@ -9,10 +9,85 @@
     <script type="text/javascript" src="/vis/vis.js"></script>
     <link href="/vis/vis.css" rel="stylesheet" type="text/css"/>
 
+    <script th:src="@{/webjars/jquery/1.12.4/jquery.min.js}"></script>
+    <script th:src="@{/webjars/typeahead.js/0.11.1/dist/typeahead.bundle.min.js}"></script>
+    <link th:href="@{/webjars/bootstrap/3.3.7-1/css/bootstrap.min.css}" rel="stylesheet" media="screen"/>
+    <script th:src="@{/webjars/bootstrap/3.3.7-1/js/bootstrap.min.js}"></script>
+
     <style type="text/css">
         #mynetwork {
             border: 1px solid lightgray;
         }
+
+        .typeahead,
+        .tt-query,
+        .tt-hint {
+            width: 396px;
+            height: 30px;
+            padding: 8px 12px;
+            font-size: 16px;
+            line-height: 30px;
+            border: 2px solid #ccc;
+            -webkit-border-radius: 8px;
+            -moz-border-radius: 8px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .typeahead {
+            background-color: #fff;
+        }
+
+        .typeahead:focus {
+            border: 2px solid #0097cf;
+        }
+
+        .tt-query {
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+            -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+        }
+
+        .tt-hint {
+            color: #999
+        }
+
+        .tt-menu {
+            width: 422px;
+            margin: 12px 0;
+            padding: 8px 0;
+            background-color: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            -webkit-border-radius: 8px;
+            -moz-border-radius: 8px;
+            border-radius: 8px;
+            -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+            -moz-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+        }
+
+        .tt-suggestion {
+            padding: 3px 20px;
+            font-size: 18px;
+            line-height: 24px;
+        }
+
+        .tt-suggestion:hover {
+            cursor: pointer;
+            color: #fff;
+            background-color: #0097cf;
+        }
+
+        .tt-suggestion.tt-cursor {
+            color: #fff;
+            background-color: #0097cf;
+
+        }
+
+        .tt-suggestion p {
+            margin: 0;
+        }
+
     </style>
 </head>
 
@@ -24,9 +99,36 @@
 
 <div id="mynetwork"></div>
 
+<form action="" method="get" class="form-horizontal" id="q-form" onsubmit="return highlight()">
+    <fieldset>
+        <legend>Query interface</legend>
+
+        <div class="form-group">
+            <label class="col-md-4 control-label" for="query">Type something here</label>
+            <div class="col-md-4">
+                <input id="query" placeholder="query" class="form-control input-md q-input"/>
+                <span class="help-block">The query</span>
+                <input type="submit" onclick="highlight()" value="find it" />
+            </div>
+            <div id="output"></div>
+
+        </div>
+
+    </fieldset>
+</form>
+
 <script type="text/javascript" th:inline="javascript">
-    function loadJSON(callback) {
-        var url = [[${util_url}]] ;
+    var graph;
+    var isis_data;
+    var highlights;
+
+    var qForm = document.querySelector("form");
+    qForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+        highlight();
+    });
+
+    function loadJSON(url, callback) {
 
         var xobj = new XMLHttpRequest();
         xobj.overrideMimeType('application/json');
@@ -41,11 +143,36 @@
         xobj.send(null);
     }
 
-    loadJSON(function (response) {
-        /*<![CDATA[*/
-        // need CDATA for lt , gt
+
+    /*<![CDATA[*/
+    // need CDATA for lt , gt
+
+    function highlight() {
+        var id = $("#query").val();
+        $("#output").text(id);
+        var newColor = "red";
+        var normalColor = "#D2E5FF";
+
+        var arrayLength = isis_data['nodes'].length;
+        for (var i = 0; i < arrayLength; i++) {
+            if (isis_data['nodes'][i]['id'] == id) {
+                graph.nodes.update([{id: id, color: {background: newColor}}]);
+            } else {
+                var other_id = isis_data['nodes'][i]['id'];
+                graph.nodes.update([{id: other_id, color: {background: normalColor}}]);
+            }
+        }
+        return false;
+    }
+
+    loadJSON([[${highlight_url}]], function (response) {
+        highlights = JSON.parse(response);
+
+    });
+
+    loadJSON([[${graph_url}]], function (response) {
         // Parse JSON string into object
-        var mydata = JSON.parse(response);
+        isis_data = JSON.parse(response);
         var height = 700;
         var options = {
             height: height + 'px',
@@ -64,35 +191,89 @@
         };
 
         // create an array with nodes
-        var nodes = new vis.DataSet(mydata['nodes']);
-        var edges = new vis.DataSet(mydata['edges']);
+        var nodes = new vis.DataSet(isis_data['nodes']);
+        var edges = new vis.DataSet(isis_data['edges']);
 
 
         // create a network
         var container = document.getElementById('mynetwork');
-        var data = {
+        graph = {
             nodes: nodes,
             edges: edges
         };
-        var network = new vis.Network(container, data, options);
+        var network = new vis.Network(container, graph, options);
 
         network.on('dragEnd', function (params) {
             for (var i = 0; i < params.nodes.length; i++) {
                 var nodeId = params.nodes[i];
-                nodes.update({id: nodeId, fixed: {x: true, y: true} });
+                nodes.update({id: nodeId, fixed: {x: true, y: true}});
             }
         });
 
-        network.on('dragStart', function(params) {
+        network.on('dragStart', function (params) {
             for (var i = 0; i < params.nodes.length; i++) {
                 var nodeId = params.nodes[i];
-                nodes.update({id: nodeId, fixed: {x: false, y: false} });
+                nodes.update({id: nodeId, fixed: {x: false, y: false}});
             }
         });
-        /*]]>*/
     });
+    /*]]>*/
 </script>
 
+<script>
+    var th_opts = {
+        hint: false,
+        highlight: true,
+        minLength: 0
+    };
+
+
+    var device_bh = new Bloodhound({
+        datumTokenizer: Bloodhound.tokenizers.obj.whitespace('urn'),
+        queryTokenizer: Bloodhound.tokenizers.whitespace,
+        limit: 10,
+
+        prefetch: {
+            cache: false,
+
+            url: '/info/devices',
+
+            filter: function (list) {
+                return $.map(list, function (urn) {
+                    return {urn: urn};
+                });
+            }
+        }
+    });
+
+    device_bh.initialize();
+
+    function devicesWithDefault(q, sync) {
+        if (q === '') {
+            sync(device_bh.index.all());
+        }
+        else {
+            device_bh.search(q, sync);
+        }
+    }
+
+
+    // otherwise typeahead doesn't work
+    $(document).ready(function () {
+
+        $('#q-form .q-input').typeahead(th_opts, {
+            name: 'devices',
+            displayKey: 'urn',
+            source: devicesWithDefault,
+            templates: {
+                suggestion: function (data) { // data is an object as returned by suggestion engine
+                    return '<div class="tt-suggest-page">' + data.urn + '</div>';
+                }
+            }
+        });
+    });
+
+</script>
 
 </body>
 </html>
