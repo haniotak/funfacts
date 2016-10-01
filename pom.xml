@@ -2,12 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
 
+    <modelVersion>4.0.0</modelVersion>
     <groupId>net.es</groupId>
     <artifactId>funfacts</artifactId>
     <version>1.0</version>
-
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -18,14 +17,12 @@
         <spring.boot.version>1.4.1.RELEASE</spring.boot.version>
     </properties>
 
-
     <pluginRepositories>
         <pluginRepository>
             <id>spring-milestone</id>
             <url>https://repo.spring.io/libs-release</url>
         </pluginRepository>
     </pluginRepositories>
-
 
     <repositories>
         <repository>

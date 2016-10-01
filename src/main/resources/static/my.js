@@ -2,11 +2,12 @@ var network;
 var graph;
 var isis_data;
 var selected_node_id;
+
 var expand_form = $('#expand_form');
-expand_form.hide();
 var cluster_form = $('#cluster_form');
-cluster_form.hide()
-var dragged_clusters = [];
+
+expand_form.hide();
+cluster_form.hide();
 
 
 function loadJSON(url, callback) {
@@ -73,10 +74,6 @@ function clusterByHub() {
 
         };
 
-        if (dragged_clusters.indexOf(hubs[j]) != -1) {
-            clusterOptionsByData.clusterNodeProperties.fixed = {x: true, y: true}
-
-        }
         network.cluster(clusterOptionsByData);
         network.stabilize();
     }
@@ -149,22 +146,24 @@ $(document).ready(function () {
         e.preventDefault();
         clusterByHub();
         cluster_form.hide();
-        selected_node_id = null;
+        if (selected_node_id != null) {
+            expand_form.show();
+
+        }
     });
 
     $('#expand_form').on('submit', function (e) {
         e.preventDefault();
         network.openCluster(selected_node_id);
-        expand_form.hide();
         cluster_form.show();
-        selected_node_id = null;
+        expand_form.hide();
         network.stabilize();
     });
 
     loadJSON("/graphs/isis", function (response) {
         // Parse JSON string into object
         isis_data = JSON.parse(response);
-        var height = 600;
+        var height = 500;
         var options = {
             height: height + 'px',
             interaction: {
@@ -202,15 +201,10 @@ $(document).ready(function () {
 
                 if (network.isCluster(nodeId) == true) {
                     console.log("dragEnd: cluster " + nodeId);
-                    expand_form.show();
-                    selected_node_id = nodeId;
-                    $('selected_hub').text(nodeId);
                     network.clustering.updateClusteredNode(nodeId, {fixed: {x: true, y: true}});
                 } else {
                     console.log("dragEnd: plain " + nodeId);
                     graph.nodes.update({id: nodeId, fixed: {x: true, y: true}});
-                    expand_form.hide();
-                    selected_node_id = null;
                 }
             }
         });
@@ -223,16 +217,11 @@ $(document).ready(function () {
 
                 if (network.isCluster(nodeId) == true) {
                     console.log("dragStart: cluster " + nodeId);
-                    expand_form.show();
-                    selected_node_id = nodeId;
                     network.clustering.updateClusteredNode(nodeId, {fixed: {x: false, y: false}});
-                    $('selected_hub').text(nodeId);
 
                 } else {
                     console.log("dragStart: plain " + nodeId);
                     graph.nodes.update({id: nodeId, fixed: {x: false, y: false}});
-                    expand_form.hide();
-                    selected_node_id = null;
 
                 }
             }
@@ -240,7 +229,12 @@ $(document).ready(function () {
 
         network.on("click", function (params) {
             var clickedNode = false;
+            selected_node_id = null;
             for (var i = 0; i < params.nodes.length; i++) {
+
+                var positions = network.getPositions()
+                $("#position").JSONView(positions, {collapsed: true});
+
                 clickedNode = true;
                 var nodeId = params.nodes[i];
                 console.log("node selected " + nodeId);
@@ -262,6 +256,7 @@ $(document).ready(function () {
             }
 
             if (!clickedNode) {
+                expand_form.hide();
                 for (var i = 0; i < params.edges.length; i++) {
                     var edgeId = params.edges[i];
                     edgeId = network.clustering.getBaseEdge(edgeId);
@@ -288,6 +283,8 @@ $(document).ready(function () {
     });
 
 });
+
+
 
 
 function show_info_card(info_card) {
