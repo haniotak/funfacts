@@ -26,7 +26,9 @@ public class Input {
 
     private List<Device> devices;
 
-    private Map<String, Map<String, IfceDetails>> ifces;
+    private Map<String, List<String>> hubs;
+
+    private Map<String, Map<String, List<IfceDetails>>> ifces;
 
     private List<IpAddrDetails> ip_addrs;
 
@@ -40,7 +42,7 @@ public class Input {
 
     private List<Peering> peerings;
 
-    private Map<String, Map<String, PortDetails>> ports;
+    private Map<String, Map<String, List<PortDetails>>> ports;
 
     private Map<String, List<String>> syslog;
 
@@ -57,6 +59,11 @@ public class Input {
         File devicesFile = inputConfig.getDevices();
         devices = mapper.readValue(devicesFile, new TypeReference<List<Device>>() {});
         log.info("devices imported: " + devices.size());
+
+
+        File hubsFile = inputConfig.getHubs();
+        hubs = mapper.readValue(hubsFile, new TypeReference< Map<String, List<String>>>() {});
+        log.info("hubs imported: " + hubs.size());
 
         File ifcesFile = inputConfig.getIfces();
         ifces = mapper.readValue(ifcesFile, new TypeReference< Map<String, Map<String, List<IfceDetails>>>>() {});

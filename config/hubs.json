@@ -1,0 +1,33 @@
+{
+  "BAY": [
+    "sacr-cr5",
+    "sunn-cr5",
+    "lbl-mr2",
+    "snll-mr2",
+    "snll-rt2",
+    "llnl-mr2",
+    "jgi-mr2",
+    "slac-mr2",
+    "nersc-mr2"
+  ],
+  "CHIC": [
+    "fnal-mr2",
+    "chic-cr5",
+    "star-cr5"
+  ],
+  "NASH": [
+    "ornl-cr5",
+    "nash-cr5",
+    "ornl-rt4",
+    "osti-rt2",
+    "orau-rt3"
+  ],
+  "WASH": [
+    "wash-cr5",
+    "wash-ar1",
+    "llnldc-rt4",
+    "forr-rt2",
+    "doe-gtn-rt2"
+  ]
+}
+

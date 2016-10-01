@@ -1,6 +1,7 @@
 package net.es.funfacts.viz;
 
 import edu.mines.jtk.awt.ColorMap;
+import lombok.extern.slf4j.Slf4j;
 import net.es.funfacts.in.IsisRelation;
 import net.es.funfacts.pop.Input;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import java.util.*;
 import java.util.List;
 
 @Component
+@Slf4j
 public class VizExporter {
 
     @Autowired
@@ -38,9 +40,12 @@ public class VizExporter {
             seenAddrs.add(z_addr);
         }
 
-        for (IsisRelation isis : seenBothSides ) {
+        for (IsisRelation isis : seenBothSides) {
             String a = isis.getA();
             String z = isis.getZ();
+            String id = isis.getA_addr();
+            // log.info("setting id: "+id);
+            String title = a + ":" + isis.getA_port() + " -- " + z + ":" + isis.getZ_port();
             if (!routers.contains(a)) {
                 routers.add(a);
             }
@@ -48,7 +53,8 @@ public class VizExporter {
                 routers.add(z);
             }
             VizEdge ve = VizEdge.builder()
-                    .from(a).to(z).title("").label("").value(1)
+                    .from(a).to(z).title(title).label("").value(1)
+                    .id(id)
                     .arrows(null).arrowStrikethrough(false).color(null)
                     .build();
             g.getEdges().add(ve);
@@ -63,8 +69,6 @@ public class VizExporter {
     }
 
 
-
-
     public VizGraph circuitGraph() {
 
         VizGraph g = VizGraph.builder().edges(new ArrayList<>()).nodes(new ArrayList<>()).build();
@@ -76,7 +80,18 @@ public class VizExporter {
 
     private void makeNode(String node, VizGraph g) {
 
+        Map<String, List<String>> hubs = input.getHubs();
+        String hub = null;
+        for (String h : hubs.keySet()) {
+            if (hubs.get(h).contains(node)) {
+                hub = h;
+            }
+        }
+
         VizNode n = VizNode.builder().id(node).label(node).title(node).value(1).build();
+        if (hub != null) {
+            n.setGroup(hub);
+        }
         g.getNodes().add(n);
     }
 

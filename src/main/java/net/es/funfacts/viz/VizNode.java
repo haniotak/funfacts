@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class VizNode {
     String id;
+    String group;
     String label;
     Integer value;
     String title;

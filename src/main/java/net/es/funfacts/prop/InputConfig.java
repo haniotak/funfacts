@@ -18,6 +18,7 @@ import java.io.File;
 public class InputConfig {
     private File circuits;
     private File devices;
+    private File hubs;
     private File ifces;
     private File ip_addrs;
     private File isis;

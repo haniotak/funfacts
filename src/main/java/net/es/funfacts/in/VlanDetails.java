@@ -13,6 +13,7 @@ public class VlanDetails {
     private String router;
     private String int_name;
     private String alias;
+    private String admin;
     private Integer mbps;
     private String address;
     private Integer vlan_id;
