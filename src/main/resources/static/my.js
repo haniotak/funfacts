@@ -32,26 +32,60 @@ function highlight_devices() {
     var id = dev_input.val();
     dev_input.text(id);
     var newColor = "red";
-    var normalColor = "#D2E5FF";
+    var normalColor = "white";
 
     var arrayLength = isis_data['nodes'].length;
+    var found = false;
     for (var i = 0; i < arrayLength; i++) {
         if (isis_data['nodes'][i]['id'] == id) {
             graph.nodes.update([{id: id, color: {background: newColor}}]);
+            found = true;
         } else {
             var other_id = isis_data['nodes'][i]['id'];
             graph.nodes.update([{id: other_id, color: {background: normalColor}}]);
         }
     }
+
+    if (found) {
+        console.log("checking clusters for id: " + id);
+        var any_clusters = network.clustering.findNode(id);
+
+        for (var i = 0; i < any_clusters.length; i++) {
+            var cluster_id = any_clusters[i];
+            console.log("checking if cluster " + cluster_id)
+            if (network.isCluster(cluster_id) == true) {
+                console.log("it is a cluster" + cluster_id)
+                network.clustering.updateClusteredNode(cluster_id, {color: {background: newColor}});
+            }
+        }
+    }
+
     return false;
 }
 
 
 function clusterByHub() {
-    var colors = ["orange", "lime", "violet", "pink", "white"];
 
     var nodes_num = isis_data['nodes'].length;
     var hubs = [];
+    var positions = {
+        "NASH": {
+            "x": -232,
+            "y": 166
+        },
+        "WASH": {
+            "x": 310,
+            "y": 243
+        },
+        "CHIC": {
+            "x": -117,
+            "y": -133
+        },
+        "BAY": {
+            "x": -1364,
+            "y": 181
+        }
+    };
     for (var i = 0; i < nodes_num; i++) {
         var hub = isis_data['nodes'][i]['group'];
         if (hub && hubs.indexOf(hub) == -1) {
@@ -59,17 +93,27 @@ function clusterByHub() {
         }
     }
 
+
     for (var j = 0; j < hubs.length; j++) {
+        var hub = hubs[j];
         var clusterOptionsByData = {
             joinCondition: function (childOptions) {
-                return childOptions.group == hubs[j];
+                return childOptions.group == hub;
             },
             clusterNodeProperties: {
-                id: 'cluster:' + hubs[j],
-                title: hubs[j],
+                id: 'cluster:' + hub,
+                title: hub,
                 borderWidth: 3,
-                label: hubs[j],
-                color: {background: colors[j]}
+                label: hub,
+                shape: "star",
+                size: 40,
+                fixed: {
+                    x: true,
+                    y: true
+                },
+                x: positions[hub].x,
+                y: positions[hub].y,
+                color: {background: "white"}
             }
 
         };
@@ -175,7 +219,11 @@ $(document).ready(function () {
                 stabilization: true
             },
             nodes: {
-                shape: 'dot'
+                shape: 'dot',
+                color: {background: "white"}
+            },
+            groups: {
+                useDefaultGroups: false
             },
             edges: {}
         };
@@ -202,9 +250,20 @@ $(document).ready(function () {
                 if (network.isCluster(nodeId) == true) {
                     console.log("dragEnd: cluster " + nodeId);
                     network.clustering.updateClusteredNode(nodeId, {fixed: {x: true, y: true}});
+                    expand_form.show();
+                    selected_node_id = nodeId;
+                    $('selected_hub').text(nodeId);
+                    $("#info_card").hide();
+
                 } else {
                     console.log("dragEnd: plain " + nodeId);
                     graph.nodes.update({id: nodeId, fixed: {x: true, y: true}});
+
+                    loadJSON("/node_info/" + nodeId, function (response) {
+                        console.log("node info: " + nodeId);
+                        var node_info = JSON.parse(response);
+                        show_info_card(node_info);
+                    });
                 }
             }
         });
@@ -232,8 +291,6 @@ $(document).ready(function () {
             selected_node_id = null;
             for (var i = 0; i < params.nodes.length; i++) {
 
-                var positions = network.getPositions()
-                $("#position").JSONView(positions, {collapsed: true});
 
                 clickedNode = true;
                 var nodeId = params.nodes[i];
@@ -243,6 +300,7 @@ $(document).ready(function () {
                     expand_form.show();
                     selected_node_id = nodeId;
                     $('selected_hub').text(nodeId);
+                    $("#info_card").hide();
                 } else {
                     expand_form.hide();
                     selected_node_id = null;
@@ -283,8 +341,6 @@ $(document).ready(function () {
     });
 
 });
-
-
 
 
 function show_info_card(info_card) {

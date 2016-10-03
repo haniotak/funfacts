@@ -92,6 +92,15 @@ public class VizExporter {
         if (hub != null) {
             n.setGroup(hub);
         }
+
+        if (input.getPositions().keySet().contains(node)) {
+            n.setFixed(new HashMap<>());
+            n.getFixed().put("x", true);
+            n.getFixed().put("y", true);
+            n.setX(input.getPositions().get(node).getX());
+            n.setY(input.getPositions().get(node).getY());
+        }
+
         g.getNodes().add(n);
     }
 

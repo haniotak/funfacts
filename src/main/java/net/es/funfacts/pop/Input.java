@@ -42,6 +42,8 @@ public class Input {
 
     private List<Peering> peerings;
 
+    private Map<String, Position> positions;
+
     private Map<String, Map<String, List<PortDetails>>> ports;
 
     private Map<String, List<String>> syslog;
@@ -97,6 +99,12 @@ public class Input {
         File portsFile = inputConfig.getPorts();
         ports = mapper.readValue(portsFile, new TypeReference< Map<String, Map<String, List<PortDetails>>>>() {});
         log.info("ports imported for devices: " + ports.size());
+
+
+        File positionsFile = inputConfig.getPositions();
+        positions = mapper.readValue(positionsFile, new TypeReference< Map<String, Position>>() {});
+        log.info("positions imported for devices: " + positions.size());
+
 
         File syslogFile = inputConfig.getSyslog();
         syslog = mapper.readValue(syslogFile, new TypeReference< Map<String, List<String>>>() {});

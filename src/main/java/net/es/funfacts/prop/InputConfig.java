@@ -27,6 +27,7 @@ public class InputConfig {
     private File oscars;
     private File peerings;
     private File ports;
+    private File positions;
     private File syslog;
     private File vlan;
 
