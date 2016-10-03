@@ -134,17 +134,17 @@ public class VizExporter {
 
         } else if (parts.length == 1) {
             ifce = parts[0];
-            for (String r : input.getIfces().keySet()) {
-                routers.add(r);
-            }
+            routers.addAll(input.getIfces().keySet());
         } else if (parts.length == 2) {
+            if (!input.getIfces().keySet().contains(parts[0])) {
+                return result;
+            }
             routers.add(parts[0]);
             ifce = parts[1];
         } else {
             return result;
 
         }
-
 
         for (String router : routers) {
             for (String ifceName : input.getIfces().get(router).keySet()) {
@@ -174,7 +174,19 @@ public class VizExporter {
             }
         }
 
-        for (String router : input.getPorts().keySet()) {
+        Set<String> isisAddrs = new HashSet<>();
+        for (String address : addresses) {
+            for (IsisRelation isis : input.getIsis()) {
+                if (address.equals(isis.getA_addr())) {
+                    isisAddrs.add(isis.getZ_addr());
+                } else if (address.equals(isis.getZ_addr())) {
+                    isisAddrs.add(isis.getA_addr());
+                }
+            }
+        }
+        addresses.addAll(isisAddrs);
+
+        for (String router : routers) {
             for (String portName : input.getPorts().get(router).keySet()) {
                 for (PortDetails pd : input.getPorts().get(router).get(portName)) {
                     boolean found = false;

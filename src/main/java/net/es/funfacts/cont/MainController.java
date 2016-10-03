@@ -124,39 +124,49 @@ public class MainController {
                 .circuits(new HashMap<>())
                 .build();
 
-        String the_router = null;
-        String the_ifce = null;
-        String the_port = null;
+        Set<String> isisAddrs = new HashSet<>();
+        for (IsisRelation isis : input.getIsis()) {
+            if (ip_addr.equals(isis.getA_addr()) || ip_addr.equals(isis.getZ_addr()) ) {
+                isisAddrs.add(isis.getA_addr());
+                isisAddrs.add(isis.getZ_addr());
+            }
+        }
+
+        HashSet<String> addresses = new HashSet<>();
+        addresses.addAll(isisAddrs);
+        HashSet<String> routers = new HashSet<>();
+        HashMap<String, String> router_ports = new HashMap<>();
+        HashMap<String, String> router_ifces = new HashMap<>();
+
 
         for (String router : input.getIfces().keySet()) {
             Map<String, List<IfceDetails>> ifces = input.getIfces().get(router);
             for (String int_name : ifces.keySet()) {
                 for (IfceDetails ifce : ifces.get(int_name)) {
-                    if (ifce.getAddress() != null && ifce.getAddress().equals(ip_addr)) {
-                        the_router = router;
-                        the_ifce = int_name;
-                        the_port = ifce.getPort();
+                    if (ifce.getAddress() != null) {
+                        for (String address: addresses) {
+                            if (ifce.getAddress().equals(address)) {
+
+                                router_ifces.put(router, int_name);
+                                addresses.add(ifce.getAddress());
+
+                                if (ifce.getPort() != null) {
+                                    router_ports.put(router, ifce.getPort());
+                                }
+                                routers.add(router);
+                            }
+                        }
                     }
                 }
             }
         }
 
-        if (the_router == null) {
+        if (addresses.size() == 0) {
             log.info("cannot find address " + ip_addr);
             result.setDisplay(false);
             return result;
-        } else {
-            log.info("found " + the_router + ":" + the_ifce);
-
         }
 
-
-        Map<String, String> ifces = new HashMap<>();
-        Map<String, String> ports = new HashMap<>();
-        ifces.put(the_router, the_ifce);
-        if (the_port != null) {
-            ports.put(the_router, the_port);
-        }
 
         List<String> circuits = new ArrayList<>();
 
@@ -164,29 +174,30 @@ public class MainController {
             boolean add = false;
             Circuit c = input.getCircuits().get(circuitName);
             for (CircuitIfce ci : c.getIfces()) {
-                if (ci.getRouter().equals(the_router) && ci.getInt_name().equals(the_ifce)) {
-                    add = true;
+                for (String router : router_ifces.keySet()) {
+                    String int_name = router_ifces.get(router);
+                    if (ci.getRouter().equals(router) && ci.getInt_name().equals(int_name)) {
+                        add = true;
+                    }
                 }
             }
             if (add) {
                 circuits.add(circuitName);
                 for (CircuitIfce ci : c.getIfces()) {
-                    ifces.put(ci.getRouter(), ci.getInt_name());
-                    ports.put(ci.getRouter(), ci.getPort());
                 }
                 result.getCircuits().put(circuitName, c);
             }
         }
 
-        for (String router : ifces.keySet()) {
-            String ifce_name = ifces.get(router);
+        for (String router : router_ifces.keySet()) {
+            String ifce_name = router_ifces.get(router);
             List<IfceDetails> ifceDetails = input.getIfces().get(router).get(ifce_name);
             String out_name = router + ":" + ifce_name;
             result.getIfces().put(out_name, ifceDetails);
         }
 
-        for (String router : ports.keySet()) {
-            String port_name = ports.get(router);
+        for (String router : router_ports.keySet()) {
+            String port_name = router_ports.get(router);
             List<PortDetails> portDetails = input.getPorts().get(router).get(port_name);
             String out_name = router + ":" + port_name;
             result.getPorts().put(out_name, portDetails);
@@ -197,8 +208,8 @@ public class MainController {
             if (m.getCircuit() != null && circuits.contains(m.getCircuit())) {
                 maintenances.add(m);
             } else if (m.getRouter() != null && m.getPort() != null) {
-                if (ports.keySet().contains(m.getRouter())) {
-                    if (ports.get(m.getRouter()).equals(m.getPort())) {
+                if (router_ports.keySet().contains(m.getRouter())) {
+                    if (router_ports.get(m.getRouter()).equals(m.getPort())) {
                         maintenances.add(m);
                     }
                 }
