@@ -3,6 +3,7 @@ package net.es.funfacts.cont;
 import lombok.extern.slf4j.Slf4j;
 import net.es.funfacts.in.*;
 import net.es.funfacts.pop.Input;
+import net.es.funfacts.viz.HighlightResult;
 import net.es.funfacts.viz.VizExporter;
 import net.es.funfacts.viz.VizGraph;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +63,17 @@ public class MainController {
         });
         return result;
 
+    }
+    @RequestMapping(value = "/highlight/ifces", method = RequestMethod.GET)
+    @ResponseBody
+    public HighlightResult highlight_ifces(@RequestParam("query") String query) {
+        return vizExporter.highlightIfces(query);
+    }
 
+    @RequestMapping(value = "/highlight/circuits", method = RequestMethod.GET)
+    @ResponseBody
+    public HighlightResult highlight_circuits(@RequestParam("query") String query) {
+        return vizExporter.highlightCircuits(query);
     }
 
     @RequestMapping(value = "/node_info/{node_id}", method = RequestMethod.GET)

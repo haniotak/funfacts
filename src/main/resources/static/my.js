@@ -26,39 +26,127 @@ function loadJSON(url, callback) {
 }
 
 
+function highlight_network(hl_node_ids, hl_edge_ids) {
+    var newColor = "red";
+    var normalNodeColor = "white";
+    var normalEdgeColor = "#2B7CE9";
+
+    var all_nodes_length = isis_data['nodes'].length;
+    var all_edges_length = isis_data['edges'].length;
+
+    var all_clusters = [];
+    var clusters_to_hl = [];
+
+    for (var i = 0; i < all_nodes_length; i++) {
+        var current_node_id = isis_data['nodes'][i]['id']
+
+        var highlightThis = false;
+        if (hl_node_ids.indexOf(current_node_id) >= 0) {
+            highlightThis = true;
+        }
+
+        var clusters_for_node = network.clustering.findNode(current_node_id);
+
+        for (var j = 0; j < clusters_for_node.length - 1; j++) {
+            var cluster_id = clusters_for_node[j];
+            if (network.isCluster(cluster_id) == true) {
+                if (!all_clusters.indexOf(cluster_id) >= 0) {
+                    all_clusters.push(cluster_id);
+                }
+                if (highlightThis && !clusters_to_hl.indexOf(cluster_id) >= 0) {
+                    clusters_to_hl.push(cluster_id);
+                }
+            }
+
+        }
+
+        if (highlightThis) {
+            graph.nodes.update([{id: current_node_id, color: {background: newColor}}]);
+
+        } else {
+            graph.nodes.update([{id: current_node_id, color: {background: normalNodeColor}}]);
+
+        }
+    }
+
+    for (var k = 0; k < all_clusters.length; k++) {
+        var cluster_id = all_clusters[k];
+        if (clusters_to_hl.indexOf(cluster_id) >= 0) {
+            network.clustering.updateClusteredNode(cluster_id, {color: {background: newColor}});
+        } else {
+            network.clustering.updateClusteredNode(cluster_id, {color: {background: normalNodeColor}});
+        }
+    }
+
+    for (var m = 0; m < all_edges_length; m++) {
+        var current_edge_id = isis_data['edges'][m]['id'];
+        var base_edge_id = network.clustering.getBaseEdge(current_edge_id);
+        var clustered_edges = network.clustering.getClusteredEdges(base_edge_id);
+
+        if (hl_edge_ids.indexOf(base_edge_id) >= 0) {
+            console.log("highlighting "+base_edge_id);
+            if (clustered_edges.length >= 2) {
+                network.clustering.updateEdge(base_edge_id, {color : newColor})
+            } else {
+                graph.edges.update([{id: current_edge_id, color: newColor}]);
+            }
+
+        } else {
+            if (clustered_edges.length >= 2) {
+                network.clustering.updateEdge(base_edge_id, {color : normalEdgeColor})
+            } else {
+                graph.edges.update([{id: current_edge_id, color: normalEdgeColor}]);
+            }
+        }
+    }
+
+}
+
 function highlight_devices() {
     var dev_input = $("#device_input");
 
     var id = dev_input.val();
-    dev_input.text(id);
-    var newColor = "red";
-    var normalColor = "white";
+    var nodeIds = [id];
+    var edgeIds = [];
 
-    var arrayLength = isis_data['nodes'].length;
-    var found = false;
-    for (var i = 0; i < arrayLength; i++) {
-        if (isis_data['nodes'][i]['id'] == id) {
-            graph.nodes.update([{id: id, color: {background: newColor}}]);
-            found = true;
-        } else {
-            var other_id = isis_data['nodes'][i]['id'];
-            graph.nodes.update([{id: other_id, color: {background: normalColor}}]);
-        }
-    }
+    highlight_network(nodeIds, edgeIds);
 
-    if (found) {
-        console.log("checking clusters for id: " + id);
-        var any_clusters = network.clustering.findNode(id);
+    return false;
+}
 
-        for (var i = 0; i < any_clusters.length; i++) {
-            var cluster_id = any_clusters[i];
-            console.log("checking if cluster " + cluster_id)
-            if (network.isCluster(cluster_id) == true) {
-                console.log("it is a cluster" + cluster_id)
-                network.clustering.updateClusteredNode(cluster_id, {color: {background: newColor}});
-            }
-        }
-    }
+
+function highlight_ifces() {
+    var ifce_input = $("#ifce_input");
+
+    var query = ifce_input.val();
+
+    var jsonPath = "/highlight/ifces?query=" + query;
+    loadJSON(jsonPath, function (response) {
+        // Parse JSON string into object
+        var hl_data = JSON.parse(response);
+        console.log("queried " + jsonPath);
+        console.log(hl_data);
+        highlight_network(hl_data.nodeIds, hl_data.edgeIds);
+
+    });
+
+    return false;
+}
+
+function highlight_circuits() {
+    var circuit_input = $("#circuit_input");
+
+    var query = circuit_input.val();
+
+    var jsonPath = "/highlight/circuits?query=" + query;
+    loadJSON(jsonPath, function (response) {
+        // Parse JSON string into object
+        var hl_data = JSON.parse(response);
+        console.log("queried " + jsonPath);
+        console.log(hl_data);
+        highlight_network(hl_data.nodeIds, hl_data.edgeIds);
+
+    });
 
     return false;
 }

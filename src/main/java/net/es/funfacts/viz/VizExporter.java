@@ -1,8 +1,9 @@
 package net.es.funfacts.viz;
 
 import edu.mines.jtk.awt.ColorMap;
+import edu.mines.jtk.bench.ArrayListBench;
 import lombok.extern.slf4j.Slf4j;
-import net.es.funfacts.in.IsisRelation;
+import net.es.funfacts.in.*;
 import net.es.funfacts.pop.Input;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -66,6 +67,140 @@ public class VizExporter {
 
         return g;
 
+    }
+
+    public HighlightResult highlightCircuits(String query) {
+        HighlightResult result = HighlightResult.builder().edgeIds(new ArrayList<>()).nodeIds(new ArrayList<>()).build();
+        if (query == null || query.equals("")) {
+            return result;
+        }
+
+        Set<Circuit> circuits = new HashSet<>();
+        Set<String> devices = new HashSet<>();
+        Set<String> addresses = new HashSet<>();
+
+        for (String circuitName : input.getCircuits().keySet()) {
+            boolean found = false;
+            Circuit c = input.getCircuits().get(circuitName);
+
+            if (circuitName.toLowerCase().contains(query)) {
+                found = true;
+            }
+
+            for (String name : c.getNames()) {
+                if (name.toLowerCase().contains(query)) {
+                    found = true;
+                }
+            }
+            if (c.getCarrier().toLowerCase().contains(query)) {
+                found = true;
+
+            }
+            if (found) {
+                circuits.add(c);
+            }
+        }
+        for (Circuit c: circuits) {
+            List<CircuitIfce> cIfces = c.getIfces();
+            for (CircuitIfce cIfce : cIfces) {
+                devices.add(cIfce.getRouter());
+                addresses.add(cIfce.getAddress());
+            }
+        }
+        result.getEdgeIds().addAll(addresses);
+        result.getNodeIds().addAll(devices);
+        return result;
+    }
+
+
+
+
+    public HighlightResult highlightIfces(String query) {
+        HighlightResult result = HighlightResult.builder().edgeIds(new ArrayList<>()).nodeIds(new ArrayList<>()).build();
+        if (query == null || query.equals("")) {
+            return result;
+        }
+
+        String[] parts = query.split(":");
+
+        Set<String> addresses = new HashSet<>();
+        Set<String> devices = new HashSet<>();
+
+        List<String> routers = new ArrayList<>();
+        String ifce;
+
+        if (parts.length == 0) {
+            return result;
+
+        } else if (parts.length == 1) {
+            ifce = parts[0];
+            for (String r : input.getIfces().keySet()) {
+                routers.add(r);
+            }
+        } else if (parts.length == 2) {
+            routers.add(parts[0]);
+            ifce = parts[1];
+        } else {
+            return result;
+
+        }
+
+
+        for (String router : routers) {
+            for (String ifceName : input.getIfces().get(router).keySet()) {
+                for (IfceDetails details : input.getIfces().get(router).get(ifceName)) {
+                    boolean found = false;
+
+                    if (ifceName.toLowerCase().contains(ifce)) {
+                        found = true;
+                    }
+                    if (details.getIp_name() != null && details.getIp_name().toLowerCase().contains(query)) {
+                        found = true;
+                    }
+                    if (details.getAddress() != null && details.getAddress().contains(query)) {
+                        found = true;
+                    }
+                    if (details.getAlias().toLowerCase().contains(query)) {
+                        found = true;
+                    }
+
+                    if (found) {
+                        devices.add(router);
+                        if (details.getAddress() != null) {
+                            addresses.add(details.getAddress());
+                        }
+                    }
+                }
+            }
+        }
+
+        for (String router : input.getPorts().keySet()) {
+            for (String portName : input.getPorts().get(router).keySet()) {
+                for (PortDetails pd : input.getPorts().get(router).get(portName)) {
+                    boolean found = false;
+
+                    if (portName.toLowerCase().contains(ifce)) {
+                        found = true;
+                    }
+                    if (pd.getInt_name().toLowerCase().contains(query)) {
+                        found = true;
+                    }
+                    if (pd.getAlias().toLowerCase().contains(query)) {
+                        found = true;
+                    }
+                    if (found) {
+                        devices.add(router);
+                    }
+                }
+
+            }
+        }
+
+
+        result.getEdgeIds().addAll(addresses);
+        result.getNodeIds().addAll(devices);
+
+        return result;
     }
 
 
